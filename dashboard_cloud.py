@@ -120,10 +120,12 @@ latest_prices = latest_prices.merge(
     suffixes=("", "_Previous"),
 )
 
-latest_prices["ChangePercent"] = (
+latest_prices["DailyReturn"] = (
     (latest_prices["ClosePrice"] - latest_prices["ClosePrice_Previous"])
     / latest_prices["ClosePrice_Previous"]
 ) * 100
+
+latest_prices["ChangePercent"] = latest_prices["DailyReturn"]
 
 high_low = df.groupby("Ticker").agg(
     High52Week=("HighPrice", "max"),
@@ -132,21 +134,9 @@ high_low = df.groupby("Ticker").agg(
 
 latest_prices = latest_prices.merge(high_low, on="Ticker", how="left")
 
-price_changes = df.sort_values(["Ticker", "Date"]).copy()
-
-price_changes["PreviousPrice"] = price_changes.groupby("Ticker")[
-    "ClosePrice"
-].shift(1)
-
-price_changes["DailyReturn"] = (
-    (price_changes["ClosePrice"] - price_changes["PreviousPrice"])
-    / price_changes["PreviousPrice"]
-) * 100
-
 gainers = (
-    price_changes[price_changes["PreviousPrice"].notna()]
+    latest_prices[latest_prices["DailyReturn"].notna()]
     .sort_values("DailyReturn", ascending=False)
-    .drop_duplicates(subset=["Ticker"], keep="first")
     .head(3)
     .copy()
 )
@@ -218,32 +208,35 @@ with tab1:
 
             fig.update_traces(
                 texttemplate="%{text:.2f}",
-                textposition="inside",
+                textposition="outside",
+                cliponaxis=False,
             )
 
             fig.update_layout(
                 xaxis_title="Ticker",
                 yaxis_title="DailyReturn",
                 height=420,
-                xaxis={
-                    "categoryorder": "array",
-                    "categoryarray": gainers["Ticker"].tolist(),
-                },
+                uniformtext_minsize=8,
+                uniformtext_mode="show",
+                yaxis=dict(
+                    range=[0, gainers["DailyReturn"].max() * 1.15]
+                ),
+                xaxis=dict(
+                    categoryorder="array",
+                    categoryarray=gainers["Ticker"].tolist(),
+                ),
             )
 
             st.plotly_chart(fig, use_container_width=True)
 
-            st.dataframe(
-                gainers[
-                    [
-                        "Ticker",
-                        "CompanyName",
-                        "ClosePrice",
-                        "DailyReturn",
-                    ]
-                ],
-                use_container_width=True,
-            )
+            display_gainers = gainers[
+                ["Ticker", "CompanyName", "ClosePrice", "DailyReturn"]
+            ].copy()
+
+            display_gainers["ClosePrice"] = display_gainers["ClosePrice"].round(2)
+            display_gainers["DailyReturn"] = display_gainers["DailyReturn"].round(2)
+
+            st.dataframe(display_gainers, use_container_width=True)
 
         else:
             st.info("No gainers data available.")
