@@ -1,6 +1,4 @@
-pandas
-numpy
-yfinance
 streamlit
+pandas
 plotly
-schedule
+numpy
