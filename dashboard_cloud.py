@@ -120,12 +120,10 @@ latest_prices = latest_prices.merge(
     suffixes=("", "_Previous"),
 )
 
-latest_prices["DailyReturn"] = (
+latest_prices["ChangePercent"] = (
     (latest_prices["ClosePrice"] - latest_prices["ClosePrice_Previous"])
     / latest_prices["ClosePrice_Previous"]
 ) * 100
-
-latest_prices["ChangePercent"] = latest_prices["DailyReturn"]
 
 high_low = df.groupby("Ticker").agg(
     High52Week=("HighPrice", "max"),
@@ -134,8 +132,21 @@ high_low = df.groupby("Ticker").agg(
 
 latest_prices = latest_prices.merge(high_low, on="Ticker", how="left")
 
+price_changes = df.sort_values(["Ticker", "Date"]).copy()
+
+price_changes["PreviousPrice"] = price_changes.groupby("Ticker")[
+    "ClosePrice"
+].shift(1)
+
+price_changes["DailyReturn"] = (
+    (price_changes["ClosePrice"] - price_changes["PreviousPrice"])
+    / price_changes["PreviousPrice"]
+) * 100
+
 gainers = (
-    latest_prices.sort_values("DailyReturn", ascending=False)
+    price_changes[price_changes["PreviousPrice"].notna()]
+    .sort_values("DailyReturn", ascending=False)
+    .drop_duplicates(subset=["Ticker"], keep="first")
     .head(3)
     .copy()
 )
