@@ -1,6 +1,5 @@
 pandas
 numpy
-pyodbc
 yfinance
 streamlit
 plotly
