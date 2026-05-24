@@ -100,7 +100,7 @@ Real-Time-Financial-Market-System/
 ├── calculate_indicators.py
 ├── run_etl.py
 ├── dashboard.py
-├── requirements.txt
+├── requirements1.txt
 ├── README.md
 │
 └── screenshots/
@@ -153,7 +153,7 @@ cd financial-market-dashboard
 ## 2. Install Dependencies
 
 ```bash
-pip install -r requirements.txt
+pip install -r requirements1.txt
 ```
 
 ---
