@@ -45,49 +45,62 @@ def load_data():
 def format_change(value):
     if pd.isna(value):
         return "N/A"
+
     if value > 0:
-        return f"▲ +{value:.4f}%"
+        return f"▲ +{value:.2f}%"
+
     if value < 0:
-        return f"▼ {value:.4f}%"
-    return f"{value:.4f}%"
+        return f"▼ {value:.2f}%"
+
+    return f"{value:.2f}%"
 
 
 def style_change(value):
     value = str(value)
+
     if "▲" in value:
         return "color: green; font-weight: bold;"
+
     if "▼" in value:
         return "color: red; font-weight: bold;"
+
     return ""
 
 
 df = load_data()
 
 st.title("📈 JSE Financial Market Dashboard")
-st.markdown("Real-time financial market monitoring dashboard using Python, SQL Server and Streamlit.")
+
+st.markdown(
+    "Real-time financial market monitoring dashboard using Python, SQL Server and Streamlit."
+)
 
 companies = sorted(df["Ticker"].dropna().unique())
 
 st.sidebar.header("Dashboard Controls")
 
-selected_ticker = st.sidebar.selectbox("Select Stock", companies)
+selected_ticker = st.sidebar.selectbox(
+    "Select Stock",
+    companies
+)
 
 date_range = st.sidebar.selectbox(
     "Select Date Range",
     ["7 Days", "30 Days", "90 Days", "1 Year"],
-    index=2,
+    index=2
 )
 
 days_map = {
     "7 Days": 7,
     "30 Days": 30,
     "90 Days": 90,
-    "1 Year": 365,
+    "1 Year": 365
 }
 
 days = days_map[date_range]
 
 latest_date = df["Date"].max()
+
 start_date = latest_date - pd.Timedelta(days=days)
 
 filtered_df = df[df["Date"] >= start_date]
@@ -114,7 +127,7 @@ latest_rows = latest_rows.merge(
     previous_rows[["Ticker", "ClosePrice"]],
     on="Ticker",
     how="left",
-    suffixes=("", "_Previous"),
+    suffixes=("", "_Previous")
 )
 
 latest_rows["DailyReturn"] = (
@@ -126,10 +139,14 @@ latest_rows["ChangePercent"] = latest_rows["DailyReturn"]
 
 high_low = df.groupby("Ticker").agg(
     High52Week=("HighPrice", "max"),
-    Low52Week=("LowPrice", "min"),
+    Low52Week=("LowPrice", "min")
 ).reset_index()
 
-latest_rows = latest_rows.merge(high_low, on="Ticker", how="left")
+latest_rows = latest_rows.merge(
+    high_low,
+    on="Ticker",
+    how="left"
+)
 
 col1, col2, col3, col4 = st.columns(4)
 
@@ -137,13 +154,22 @@ with col1:
     st.metric("Total Companies", len(companies))
 
 with col2:
-    st.metric("Average Price", f"R{latest_rows['ClosePrice'].mean():,.4f}")
+    st.metric(
+        "Average Price",
+        f"R{latest_rows['ClosePrice'].mean():,.0f}"
+    )
 
 with col3:
-    st.metric("Total Volume", f"{latest_rows['Volume'].sum():,.0f}")
+    st.metric(
+        "Total Volume",
+        f"{latest_rows['Volume'].sum():,.0f}"
+    )
 
 with col4:
-    st.metric("Latest Date", str(latest_date.date()))
+    st.metric(
+        "Latest Date",
+        str(latest_date.date())
+    )
 
 tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs(
     [
@@ -152,76 +178,109 @@ tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs(
         "Stock Analysis",
         "Technical Indicators",
         "Trading Signals",
-        "Range High/Low",
+        "Range High/Low"
     ]
 )
 
 with tab1:
+
     st.subheader("Market Overview")
 
-    gainers = latest_rows.sort_values("DailyReturn", ascending=False).head(5)
-    most_active = latest_rows.sort_values("Volume", ascending=False)
+    gainers = latest_rows.sort_values(
+        "DailyReturn",
+        ascending=False
+    ).head(5)
+
+    most_active = latest_rows.sort_values(
+        "Volume",
+        ascending=False
+    ).head(10)
 
     col1, col2 = st.columns(2)
 
     with col1:
+
         st.markdown("### Top Gainers")
 
         fig = px.bar(
             gainers,
             x="Ticker",
-            y="ClosePrice",
-            text="ClosePrice",
-            title="Top 5 Daily Gainers",
+            y="DailyReturn",
+            text="DailyReturn",
+            title="Top 5 Daily Gainers (%)"
         )
 
         fig.update_traces(
-            texttemplate="%{text:.4f}",
-            textposition="outside",
+            texttemplate="%{text:.2f}",
+            textposition="outside"
         )
 
         fig.update_layout(
             xaxis_title="Ticker",
-            yaxis_title="Current Price",
+            yaxis_title="Daily Return (%)",
             height=420,
+            xaxis={
+                "categoryorder": "array",
+                "categoryarray": gainers["Ticker"].tolist()
+            }
         )
 
         st.plotly_chart(fig, use_container_width=True)
 
         display_gainers = gainers.copy()
-        display_gainers["ClosePrice"] = display_gainers["ClosePrice"].round(4)
-        display_gainers["DailyReturn"] = display_gainers["DailyReturn"].round(4)
+
+        display_gainers["ClosePrice"] = (
+            display_gainers["ClosePrice"].round(0)
+        )
+
+        display_gainers["DailyReturn"] = (
+            display_gainers["DailyReturn"].round(2)
+        )
 
         st.dataframe(
             display_gainers[
-                ["Ticker", "CompanyName", "ClosePrice", "DailyReturn"]
+                [
+                    "Ticker",
+                    "CompanyName",
+                    "ClosePrice",
+                    "DailyReturn"
+                ]
             ],
-            use_container_width=True,
+            use_container_width=True
         )
 
     with col2:
+
         st.markdown("### Most Active Stocks")
 
         fig = px.pie(
             most_active,
             values="Volume",
             names="Ticker",
-            title="Volume Distribution",
+            title="Volume Distribution"
         )
 
-        st.plotly_chart(fig, use_container_width=True)
-
-        display_active = most_active.copy()
-        display_active["ClosePrice"] = display_active["ClosePrice"].round(4)
+        st.plotly_chart(
+            fig,
+            use_container_width=True
+        )
 
         st.dataframe(
-            display_active[
-                ["Ticker", "CompanyName", "SectorName", "ClosePrice", "Volume", "Date"]
+            most_active[
+                [
+                    "Ticker",
+                    "CompanyName",
+                    "SectorName",
+                    "ClosePrice",
+                    "Volume",
+                    "Date"
+                ]
             ],
-            use_container_width=True,
+            use_container_width=True
         )
 
 with tab2:
+
     st.subheader("Market Watchlist")
 
     watchlist = latest_rows[
@@ -236,39 +295,54 @@ with tab2:
             "Volume",
             "High52Week",
             "Low52Week",
-            "ChangePercent",
+            "ChangePercent"
         ]
     ].copy()
 
-    watchlist["ChangePercent"] = watchlist["ChangePercent"].apply(format_change)
-
-    styled_watchlist = watchlist.style.format(
-        {
-            "OpenPrice": "R{:,.4f}",
-            "HighPrice": "R{:,.4f}",
-            "LowPrice": "R{:,.4f}",
-            "ClosePrice": "R{:,.4f}",
-            "Volume": "{:,.0f}",
-            "High52Week": "R{:,.4f}",
-            "Low52Week": "R{:,.4f}",
-        }
-    ).map(
-        lambda value: "color: green; font-weight: bold;",
-        subset=["HighPrice", "High52Week"],
-    ).map(
-        lambda value: "color: red; font-weight: bold;",
-        subset=["LowPrice", "Low52Week"],
-    ).map(
-        style_change,
-        subset=["ChangePercent"],
+    watchlist["ChangePercent"] = (
+        watchlist["ChangePercent"]
+        .apply(format_change)
     )
 
-    st.dataframe(styled_watchlist, use_container_width=True)
+    styled_watchlist = (
+        watchlist.style.format(
+            {
+                "OpenPrice": "R{:,.0f}",
+                "HighPrice": "R{:,.0f}",
+                "LowPrice": "R{:,.0f}",
+                "ClosePrice": "R{:,.0f}",
+                "Volume": "{:,.0f}",
+                "High52Week": "R{:,.0f}",
+                "Low52Week": "R{:,.0f}"
+            }
+        )
+        .map(
+            lambda value:
+            "color: green; font-weight: bold;",
+            subset=["HighPrice", "High52Week"]
+        )
+        .map(
+            lambda value:
+            "color: red; font-weight: bold;",
+            subset=["LowPrice", "Low52Week"]
+        )
+        .map(
+            style_change,
+            subset=["ChangePercent"]
+        )
+    )
+
+    st.dataframe(
+        styled_watchlist,
+        use_container_width=True
+    )
 
 with tab3:
+
     st.subheader(f"Stock Analysis: {selected_ticker}")
 
     if not selected_df.empty:
+
         fig = go.Figure()
 
         fig.add_trace(
@@ -278,7 +352,7 @@ with tab3:
                 high=selected_df["HighPrice"],
                 low=selected_df["LowPrice"],
                 close=selected_df["ClosePrice"],
-                name="OHLC",
+                name="OHLC"
             )
         )
 
@@ -286,31 +360,29 @@ with tab3:
             title=f"{selected_ticker} Candlestick Chart",
             xaxis_title="Date",
             yaxis_title="Price",
-            height=500,
+            height=500
         )
 
-        st.plotly_chart(fig, use_container_width=True)
-
-        latest = selected_df.iloc[-1]
-
-        c1, c2, c3, c4 = st.columns(4)
-
-        c1.metric("Close Price", f"R{latest['ClosePrice']:,.4f}")
-        c2.metric("High Price", f"R{latest['HighPrice']:,.4f}")
-        c3.metric("Low Price", f"R{latest['LowPrice']:,.4f}")
-        c4.metric("Volume", f"{latest['Volume']:,.0f}")
+        st.plotly_chart(
+            fig,
+            use_container_width=True
+        )
 
 with tab4:
-    st.subheader(f"Technical Indicators: {selected_ticker}")
+
+    st.subheader(
+        f"Technical Indicators: {selected_ticker}"
+    )
 
     if not selected_df.empty:
+
         fig_ma = go.Figure()
 
         fig_ma.add_trace(
             go.Scatter(
                 x=selected_df["Date"],
                 y=selected_df["ClosePrice"],
-                name="Close Price",
+                name="Close Price"
             )
         )
 
@@ -318,7 +390,7 @@ with tab4:
             go.Scatter(
                 x=selected_df["Date"],
                 y=selected_df["SMA20"],
-                name="SMA 20",
+                name="SMA20"
             )
         )
 
@@ -326,18 +398,19 @@ with tab4:
             go.Scatter(
                 x=selected_df["Date"],
                 y=selected_df["SMA50"],
-                name="SMA 50",
+                name="SMA50"
             )
         )
 
         fig_ma.update_layout(
             title="Moving Averages",
-            xaxis_title="Date",
-            yaxis_title="Price",
-            height=400,
+            height=400
         )
 
-        st.plotly_chart(fig_ma, use_container_width=True)
+        st.plotly_chart(
+            fig_ma,
+            use_container_width=True
+        )
 
         fig_rsi = go.Figure()
 
@@ -345,16 +418,22 @@ with tab4:
             go.Scatter(
                 x=selected_df["Date"],
                 y=selected_df["RSI14"],
-                name="RSI 14",
+                name="RSI14"
             )
         )
 
-        fig_rsi.add_hline(y=70, line_dash="dash")
-        fig_rsi.add_hline(y=30, line_dash="dash")
+        fig_rsi.add_hline(y=70)
+        fig_rsi.add_hline(y=30)
 
-        fig_rsi.update_layout(title="RSI Indicator", height=350)
+        fig_rsi.update_layout(
+            title="RSI Indicator",
+            height=350
+        )
 
-        st.plotly_chart(fig_rsi, use_container_width=True)
+        st.plotly_chart(
+            fig_rsi,
+            use_container_width=True
+        )
 
         fig_macd = go.Figure()
 
@@ -362,7 +441,7 @@ with tab4:
             go.Scatter(
                 x=selected_df["Date"],
                 y=selected_df["MACDLine"],
-                name="MACD Line",
+                name="MACD Line"
             )
         )
 
@@ -370,7 +449,7 @@ with tab4:
             go.Scatter(
                 x=selected_df["Date"],
                 y=selected_df["MACDSignal"],
-                name="Signal Line",
+                name="Signal Line"
             )
         )
 
@@ -378,107 +457,90 @@ with tab4:
             go.Bar(
                 x=selected_df["Date"],
                 y=selected_df["MACDHistogram"],
-                name="Histogram",
+                name="Histogram"
             )
         )
 
-        fig_macd.update_layout(title="MACD Indicator", height=350)
+        fig_macd.update_layout(
+            title="MACD Indicator",
+            height=350
+        )
 
-        st.plotly_chart(fig_macd, use_container_width=True)
+        st.plotly_chart(
+            fig_macd,
+            use_container_width=True
+        )
 
 with tab5:
-    st.subheader("Moving Average Trading Signals")
+
+    st.subheader(
+        "Moving Average Trading Signals"
+    )
 
     signals = latest_rows[
         [
             "Ticker",
             "CompanyName",
             "SMA20",
-            "SMA50",
+            "SMA50"
         ]
     ].copy()
 
     signals["Signal"] = signals.apply(
-        lambda row: "BUY SIGNAL"
+        lambda row:
+        "BUY SIGNAL"
         if row["SMA20"] > row["SMA50"]
         else "SELL SIGNAL"
         if row["SMA20"] < row["SMA50"]
         else "HOLD",
-        axis=1,
+        axis=1
     )
 
-    signals["SMA20"] = signals["SMA20"].round(4)
-    signals["SMA50"] = signals["SMA50"].round(4)
-
-    st.dataframe(signals, use_container_width=True)
-
-    buy_count = len(signals[signals["Signal"].str.contains("BUY", na=False)])
-    sell_count = len(signals[signals["Signal"].str.contains("SELL", na=False)])
-    hold_count = len(signals[signals["Signal"].str.contains("HOLD", na=False)])
-
-    c1, c2, c3 = st.columns(3)
-
-    c1.metric("Buy Signals", buy_count)
-    c2.metric("Sell Signals", sell_count)
-    c3.metric("Hold Signals", hold_count)
+    st.dataframe(
+        signals,
+        use_container_width=True
+    )
 
 with tab6:
-    st.subheader(f"{date_range} High/Low: {selected_ticker}")
+
+    st.subheader(
+        f"{date_range} High/Low: {selected_ticker}"
+    )
 
     if not selected_df.empty:
+
         high_value = selected_df["HighPrice"].max()
         low_value = selected_df["LowPrice"].min()
 
         c1, c2 = st.columns(2)
 
-        c1.metric(f"{date_range} High", f"R{high_value:,.4f}")
-        c2.metric(f"{date_range} Low", f"R{low_value:,.4f}")
-
-        fig_range = go.Figure()
-
-        fig_range.add_trace(
-            go.Scatter(
-                x=selected_df["Date"],
-                y=selected_df["HighPrice"],
-                name="High Price",
-            )
+        c1.metric(
+            f"{date_range} High",
+            f"R{high_value:,.0f}"
         )
 
-        fig_range.add_trace(
-            go.Scatter(
-                x=selected_df["Date"],
-                y=selected_df["LowPrice"],
-                name="Low Price",
-            )
+        c2.metric(
+            f"{date_range} Low",
+            f"R{low_value:,.0f}"
         )
-
-        fig_range.update_layout(
-            title=f"{selected_ticker} High vs Low",
-            xaxis_title="Date",
-            yaxis_title="Price",
-            height=400,
-        )
-
-        st.plotly_chart(fig_range, use_container_width=True)
-
-        display_range = selected_df[
-            [
-                "Date",
-                "OpenPrice",
-                "HighPrice",
-                "LowPrice",
-                "ClosePrice",
-                "Volume",
-            ]
-        ].copy()
-
-        display_range[
-            ["OpenPrice", "HighPrice", "LowPrice", "ClosePrice"]
-        ] = display_range[
-            ["OpenPrice", "HighPrice", "LowPrice", "ClosePrice"]
-        ].round(4)
-
-        st.dataframe(display_range, use_container_width=True)
 
 st.markdown("---")
-st.caption(f"Last refreshed: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+
+st.markdown(
+    """
+    <div style='text-align:center;
+                font-size:18px;
+                color:gray;
+                padding-top:20px;'>
+
+        Prepared by <b>M. Mohlala</b>
+
+    </div>
+    """,
+    unsafe_allow_html=True
+)
+
+st.caption(
+    f"Last refreshed: "
+    f"{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}"
+)
