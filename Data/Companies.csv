@@ -1,0 +1,15 @@
+CompanyID,Ticker,CompanyName,SectorID,ExchangeID,MarketCap,ListingDate,IsActive,CreatedAt
+1,AGL.JO,Anglo American Platinum Ltd,2,1.0,,,True,2026-02-21 13:59:32.830000
+2,SBK.JO,Standard Bank Group Ltd,1,1.0,,,True,2026-02-21 13:59:32.830000
+3,NPN.JO,Naspers Ltd,5,1.0,,,True,2026-02-21 13:59:32.830000
+4,MTN.JO,MTN Group Ltd,4,1.0,,,True,2026-02-21 13:59:32.830000
+5,SOL.JO,Sasol Ltd,2,,,,True,2026-05-24 04:35:13.523333
+6,IMP.JO,Impala Platinum Holdings Ltd,2,,,,True,2026-05-24 04:35:13.523333
+7,GLN.JO,Glencore plc,2,,,,True,2026-05-24 04:35:13.523333
+8,FSR.JO,FirstRand Ltd,1,,,,True,2026-05-24 04:35:13.523333
+9,SLM.JO,Sanlam Ltd,1,,,,True,2026-05-24 04:35:13.523333
+10,DSY.JO,Discovery Ltd,1,,,,True,2026-05-24 04:35:13.523333
+11,CPI.JO,Capitec Bank Holdings Ltd,1,,,,True,2026-05-24 04:35:13.523333
+12,PRX.JO,Prosus NV,5,,,,True,2026-05-24 04:35:13.523333
+13,BHG.JO,Bytes Technology Group plc,5,,,,True,2026-05-24 04:35:13.523333
+14,VOD.JO,Vodacom Group Ltd,4,,,,True,2026-05-24 04:35:13.523333
