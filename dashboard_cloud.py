@@ -65,7 +65,6 @@ def style_change(value):
 df = load_data()
 
 st.title("📈 JSE Financial Market Dashboard")
-
 st.markdown(
     "Real-time financial market monitoring dashboard using Python, SQL Server and Streamlit."
 )
@@ -121,47 +120,24 @@ latest_prices = latest_prices.merge(
     suffixes=("", "_Previous"),
 )
 
-latest_prices["ChangePercent"] = (
+latest_prices["DailyReturn"] = (
     (latest_prices["ClosePrice"] - latest_prices["ClosePrice_Previous"])
     / latest_prices["ClosePrice_Previous"]
 ) * 100
+
+latest_prices["ChangePercent"] = latest_prices["DailyReturn"]
 
 high_low = df.groupby("Ticker").agg(
     High52Week=("HighPrice", "max"),
     Low52Week=("LowPrice", "min"),
 ).reset_index()
 
-latest_prices = latest_prices.merge(
-    high_low,
-    on="Ticker",
-    how="left",
-)
-
-# Daily return calculation for gainers
-price_changes = df.sort_values(["Ticker", "Date"]).copy()
-
-price_changes["PreviousPrice"] = (
-    price_changes.groupby("Ticker")["ClosePrice"].shift(1)
-)
-
-price_changes["DailyReturn"] = (
-    (price_changes["ClosePrice"] - price_changes["PreviousPrice"])
-    / price_changes["PreviousPrice"]
-) * 100
-
-# Remove unrealistic outliers
-price_changes = price_changes[
-    price_changes["PreviousPrice"].notna()
-]
-
-price_changes = price_changes[
-    price_changes["DailyReturn"].abs() < 100
-]
+latest_prices = latest_prices.merge(high_low, on="Ticker", how="left")
 
 gainers = (
-    price_changes
-    .sort_values("DailyReturn", ascending=False)
+    latest_prices.sort_values("DailyReturn", ascending=False)
     .head(3)
+    .copy()
 )
 
 signals = latest_prices[
@@ -182,6 +158,7 @@ signals["Signal"] = signals.apply(
     axis=1,
 )
 
+
 col1, col2, col3, col4 = st.columns(4)
 
 with col1:
@@ -198,6 +175,7 @@ with col3:
 with col4:
     st.metric("Latest Date", str(latest_date.date()))
 
+
 tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs(
     [
         "Market Overview",
@@ -208,6 +186,7 @@ tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs(
         "Range High/Low",
     ]
 )
+
 
 with tab1:
     st.subheader("Market Overview")
@@ -228,7 +207,7 @@ with tab1:
 
             fig.update_traces(
                 texttemplate="%{text:.2f}",
-                textposition="outside",
+                textposition="inside",
             )
 
             fig.update_layout(
@@ -293,6 +272,7 @@ with tab1:
         else:
             st.info("No volume data available.")
 
+
 with tab2:
     st.subheader("Market Watchlist")
 
@@ -335,10 +315,8 @@ with tab2:
         subset=["ChangePercent"],
     )
 
-    st.dataframe(
-        styled_watchlist,
-        use_container_width=True,
-    )
+    st.dataframe(styled_watchlist, use_container_width=True)
+
 
 with tab3:
     st.subheader(f"Stock Analysis: {selected_ticker}")
@@ -364,10 +342,7 @@ with tab3:
             height=500,
         )
 
-        st.plotly_chart(
-            fig,
-            use_container_width=True,
-        )
+        st.plotly_chart(fig, use_container_width=True)
 
         latest = selected_df.iloc[-1]
 
@@ -380,6 +355,7 @@ with tab3:
 
     else:
         st.warning("No stock data found.")
+
 
 with tab4:
     st.subheader(f"Technical Indicators: {selected_ticker}")
@@ -418,10 +394,7 @@ with tab4:
             height=400,
         )
 
-        st.plotly_chart(
-            fig_ma,
-            use_container_width=True,
-        )
+        st.plotly_chart(fig_ma, use_container_width=True)
 
         fig_rsi = go.Figure()
 
@@ -441,10 +414,7 @@ with tab4:
             height=350,
         )
 
-        st.plotly_chart(
-            fig_rsi,
-            use_container_width=True,
-        )
+        st.plotly_chart(fig_rsi, use_container_width=True)
 
         fig_macd = go.Figure()
 
@@ -477,22 +447,17 @@ with tab4:
             height=350,
         )
 
-        st.plotly_chart(
-            fig_macd,
-            use_container_width=True,
-        )
+        st.plotly_chart(fig_macd, use_container_width=True)
 
     else:
         st.warning("No indicators available.")
+
 
 with tab5:
     st.subheader("Moving Average Trading Signals")
 
     if not signals.empty:
-        st.dataframe(
-            signals,
-            use_container_width=True,
-        )
+        st.dataframe(signals, use_container_width=True)
 
         buy_count = len(signals[signals["Signal"].str.contains("BUY", na=False)])
         sell_count = len(signals[signals["Signal"].str.contains("SELL", na=False)])
@@ -506,6 +471,7 @@ with tab5:
 
     else:
         st.info("No trading signals available.")
+
 
 with tab6:
     st.subheader(f"{date_range} High/Low: {selected_ticker}")
@@ -544,10 +510,7 @@ with tab6:
             height=400,
         )
 
-        st.plotly_chart(
-            fig_range,
-            use_container_width=True,
-        )
+        st.plotly_chart(fig_range, use_container_width=True)
 
         st.dataframe(
             selected_df[
@@ -566,6 +529,7 @@ with tab6:
     else:
         st.info("No data available.")
 
+
 st.markdown("---")
 
 st.markdown(
@@ -578,6 +542,5 @@ st.markdown(
 )
 
 st.caption(
-    f"Last refreshed: "
-    f"{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}"
+    f"Last refreshed: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}"
 )
