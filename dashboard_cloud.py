@@ -9,26 +9,24 @@ st.set_page_config(
     layout="wide"
 )
 
+
 @st.cache_data(ttl=300)
 def load_data():
-    companies = pd.read_csv("data/Companies.csv")
-    sectors = pd.read_csv("data/Sectors.csv")
-    dates = pd.read_csv("data/CalendarDates.csv")
-    prices = pd.read_csv("data/StockPrices.csv")
-    indicators = pd.read_csv("data/TechnicalIndicators.csv")
+    companies = pd.read_csv("Data/Companies.csv")
+    sectors = pd.read_csv("Data/Sectors.csv")
+    dates = pd.read_csv("Data/CalendarDates.csv")
+    prices = pd.read_csv("Data/StockPrices.csv")
+    indicators = pd.read_csv("Data/TechnicalIndicators.csv")
 
     dates["Date"] = pd.to_datetime(dates["Date"])
 
     df = prices.merge(companies, on="CompanyID", how="left")
     df = df.merge(sectors, on="SectorID", how="left")
     df = df.merge(dates, on="DateID", how="left")
-    df = df.merge(
-        indicators,
-        on=["CompanyID", "DateID"],
-        how="left"
-    )
+    df = df.merge(indicators, on=["CompanyID", "DateID"], how="left")
 
     return df
+
 
 def format_change(value):
     if pd.isna(value):
@@ -39,6 +37,7 @@ def format_change(value):
         return f"▼ {value:.2f}%"
     return f"{value:.2f}%"
 
+
 def style_change(value):
     value = str(value)
     if "▲" in value:
@@ -46,6 +45,7 @@ def style_change(value):
     if "▼" in value:
         return "color: red; font-weight: bold;"
     return ""
+
 
 df = load_data()
 
